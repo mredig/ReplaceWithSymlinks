@@ -36,7 +36,7 @@ public enum ReplaceWithSymlinksCore {
 			for dup in dups {
 				let destinationFileURL = destinationDirectory.appending(component: "\(dup.lastPathComponent)", directoryHint: .notDirectory)
 				try fm.trashItem(at: destinationFileURL, resultingItemURL: nil)
-				let url = URL(string: destinationFileURL.relativePath(to: dup))!
+				let url = URL(string: destinationFileURL.relativePath(to: dup).addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!)!
 				try fm.createSymbolicLink(at: destinationFileURL, withDestinationURL: url)
 			}
 		}
