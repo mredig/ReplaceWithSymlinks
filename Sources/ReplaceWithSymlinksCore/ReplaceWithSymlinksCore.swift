@@ -9,9 +9,19 @@ public enum ReplaceWithSymlinksCore {
 
 			let fm = FileManager.default
 
-			let destinationContents = try fm.contentsOfDirectory(at: destinationDirectory, includingPropertiesForKeys: nil)
+			let destinationContents = try fm
+				.contentsOfDirectory(at: destinationDirectory, includingPropertiesForKeys: [URLResourceKey.isSymbolicLinkKey])
+				.filter {
+					let values = try $0.resourceValues(forKeys: [.isSymbolicLinkKey])
+					return values.isSymbolicLink == false
+				}
 
-			let sourceContents = try fm.contentsOfDirectory(at: sourceDirectory, includingPropertiesForKeys: nil)
+			let sourceContents = try fm
+				.contentsOfDirectory(at: sourceDirectory, includingPropertiesForKeys: nil)
+				.filter {
+					let values = try $0.resourceValues(forKeys: [.isSymbolicLinkKey])
+					return values.isSymbolicLink == false
+				}
 
 			let dups = try await duplicates(
 				betweenSourceContent: sourceContents,
@@ -19,6 +29,13 @@ public enum ReplaceWithSymlinksCore {
 				comparingHashes: compareHashes)
 			print("matches: ")
 			dups.forEach { print($0.lastPathComponent) }
+
+			for dup in dups {
+				let destinationFileURL = destinationDirectory.appending(component: "\(dup.lastPathComponent)", directoryHint: .notDirectory)
+				try fm.trashItem(at: destinationFileURL, resultingItemURL: nil)
+				let url = URL(string: destinationFileURL.relativePath(to: dup))!
+				try fm.createSymbolicLink(at: destinationFileURL, withDestinationURL: url)
+			}
 		}
 
 	private static func duplicates(
@@ -54,6 +71,7 @@ public enum ReplaceWithSymlinksCore {
 				}
 				return matchingURLs
 			}
+			print()
 
 			return hashMatches
 		}
