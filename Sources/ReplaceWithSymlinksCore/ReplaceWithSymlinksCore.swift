@@ -58,16 +58,19 @@ public enum ReplaceWithSymlinksCore {
 			guard comparingHashes else { return matches }
 
 			let hashMatches = try await withThrowingTaskGroup(of: URL?.self) { group in
-				for sourceURL in matches {
+				let queue = SchedulingQueue<URL?>()
+				for (index, sourceURL) in matches.enumerated() {
 					guard let destinationURL = destinationNames[key(sourceURL.lastPathComponent)] else { continue }
 					group.addTask {
-						print("Comparing files named \(sourceURL.lastPathComponent)...")
-						async let sourceHash = Insecure.MD5.hash(sourceURL)
-						async let destinationHash = Insecure.MD5.hash(destinationURL)
+						return try await queue.addTask(label: "\(index): \(sourceURL.lastPathComponent)") {
+							print("Comparing files named \(sourceURL.lastPathComponent)...")
+							async let sourceHash = Insecure.MD5.hash(sourceURL)
+							async let destinationHash = Insecure.MD5.hash(destinationURL)
 
-						guard try await sourceHash == (try await destinationHash) else { return nil }
-						print("\(sourceURL.lastPathComponent) match!")
-						return sourceURL
+							guard try await sourceHash == (try await destinationHash) else { return nil }
+							print("\(sourceURL.lastPathComponent) match!")
+							return sourceURL
+						}
 					}
 				}
 
