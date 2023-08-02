@@ -46,16 +46,20 @@ public enum ReplaceWithSymlinksCore {
 		andDestinationContent destinationContent: [URL],
 		comparingHashes: Bool) async throws -> [URL] {
 
+			func key(_ keyValue: String) -> String {
+				comparingHashes ? keyValue.lowercased() : keyValue
+			}
+
 			let destinationNames = destinationContent.reduce(into: [String: URL](), {
-				$0[$1.lastPathComponent] = $1
+				$0[key($1.lastPathComponent)] = $1
 			})
-			let matches = sourceContents.filter { destinationNames[$0.lastPathComponent] != nil }
+			let matches = sourceContents.filter { destinationNames[key($0.lastPathComponent)] != nil }
 
 			guard comparingHashes else { return matches }
 
 			let hashMatches = try await withThrowingTaskGroup(of: URL?.self) { group in
 				for sourceURL in matches {
-					guard let destinationURL = destinationNames[sourceURL.lastPathComponent] else { continue }
+					guard let destinationURL = destinationNames[key(sourceURL.lastPathComponent)] else { continue }
 					group.addTask {
 						print("Comparing files named \(sourceURL.lastPathComponent)...")
 						async let sourceHash = Insecure.MD5.hash(sourceURL)
