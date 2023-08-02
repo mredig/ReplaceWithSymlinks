@@ -25,11 +25,21 @@ struct ReplaceWithSymlinks: AsyncParsableCommand {
 	@Flag(help: "Compare hashes")
 	var compareHashes = false
 
+	@Flag(help: "Dry run - don't actually make changes")
+	var dryRun = false
+
 	mutating func run() async throws {
+		if dryRun {
+			print("Dry run. No changes will be made...")
+		}
+
+		print("Comparing original files in \(sourceDirectory.relativePath) to potential duplicates in \(destinationDirectory.relativePath)")
+
 		try await ReplaceWithSymlinksCore
 			.replaceFiles(
 				in: destinationDirectory,
 				withFileSymlinksFrom: sourceDirectory,
+				commit: !dryRun,
 				compareHashes: compareHashes)
 	}
 }

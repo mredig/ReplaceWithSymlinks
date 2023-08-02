@@ -5,6 +5,7 @@ public enum ReplaceWithSymlinksCore {
 	public static func replaceFiles(
 		in destinationDirectory: URL,
 		withFileSymlinksFrom sourceDirectory: URL,
+		commit: Bool,
 		compareHashes: Bool) async throws {
 
 			let fm = FileManager.default
@@ -29,6 +30,8 @@ public enum ReplaceWithSymlinksCore {
 				comparingHashes: compareHashes)
 			print("matches: ")
 			dups.forEach { print($0.lastPathComponent) }
+
+			guard commit else { return }
 
 			for dup in dups {
 				let destinationFileURL = destinationDirectory.appending(component: "\(dup.lastPathComponent)", directoryHint: .notDirectory)
