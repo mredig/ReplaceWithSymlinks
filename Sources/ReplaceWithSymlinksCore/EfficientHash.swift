@@ -6,21 +6,20 @@ extension HashFunction {
 		let fh = try FileHandle(forReadingFrom: url)
 		var hash = Self.init()
 
-		print("Reading \(url)")
-		var buffer = Data(capacity: 1024)
+		let bufferSize = 40960
+		var buffer = Data(capacity: bufferSize)
 		for try await byte in fh.bytes {
 			buffer.append(byte)
 
-			if buffer.count >= 1024 {
+			if buffer.count >= bufferSize {
 				hash.update(data: buffer)
-				buffer = Data(capacity: 1024)
+				buffer = Data(capacity: bufferSize)
 			}
 		}
 
 		if buffer.isEmpty == false {
 			hash.update(data: buffer)
 		}
-		print("finished \(url)")
 
 		return hash.finalize()
 	}
