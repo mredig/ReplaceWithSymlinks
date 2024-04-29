@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import SwiftPizzaSnips
 
 public enum ReplaceWithSymlinksCore {
 	public static func replaceFiles(
