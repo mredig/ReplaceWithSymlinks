@@ -10,19 +10,18 @@ public enum ReplaceWithSymlinksCore {
 
 			let fm = FileManager.default
 
+			func contentFilter(_ url: URL) throws -> Bool {
+				let values = try url.resourceValues(forKeys: [.isSymbolicLinkKey])
+				return values.isSymbolicLink == false
+			}
+
 			let destinationContents = try fm
-				.contentsOfDirectory(at: destinationDirectory, includingPropertiesForKeys: [URLResourceKey.isSymbolicLinkKey])
-				.filter {
-					let values = try $0.resourceValues(forKeys: [.isSymbolicLinkKey])
-					return values.isSymbolicLink == false
-				}
+				.contentsOfDirectory(at: destinationDirectory, includingPropertiesForKeys: [.isSymbolicLinkKey])
+				.filter(contentFilter)
 
 			let sourceContents = try fm
-				.contentsOfDirectory(at: sourceDirectory, includingPropertiesForKeys: nil)
-				.filter {
-					let values = try $0.resourceValues(forKeys: [.isSymbolicLinkKey])
-					return values.isSymbolicLink == false
-				}
+				.contentsOfDirectory(at: sourceDirectory, includingPropertiesForKeys: [.isSymbolicLinkKey])
+				.filter(contentFilter)
 
 			let dups = try await duplicates(
 				betweenSourceContent: sourceContents,
@@ -64,6 +63,20 @@ public enum ReplaceWithSymlinksCore {
 					group.addTask {
 						return try await queue.addTask(label: "\(index): \(sourceURL.lastPathComponent)") {
 							print("Comparing files named \(sourceURL.lastPathComponent)...")
+							let sourceIsDirectory = try sourceURL.resourceValues(forKeys: [.isDirectoryKey])
+							let destinationIsDirectory = try destinationURL.resourceValues(forKeys: [.isDirectoryKey])
+							if
+								sourceIsDirectory.isDirectory.nilIsFalse == true,
+								destinationIsDirectory.isDirectory.nilIsFalse == true {
+
+								print("\(sourceURL.lastPathComponent) match!")
+								return sourceURL
+							} else if sourceIsDirectory.isDirectory.nilIsFalse != destinationIsDirectory.isDirectory.nilIsFalse {
+
+								print("Directory/file mismatch: \(sourceURL)")
+								return nil
+							}
+
 							async let sourceHash = Insecure.MD5.hash(sourceURL)
 							async let destinationHash = Insecure.MD5.hash(destinationURL)
 
