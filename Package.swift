@@ -22,6 +22,13 @@ let package = Package(
 				"ReplaceWithSymlinksCore",
 			]
 		),
+		.executableTarget(
+			name: "ReplaceSymlinksWithFile",
+			dependencies: [
+				.product(name: "ArgumentParser", package: "swift-argument-parser"),
+				"ReplaceWithSymlinksCore",
+			]
+		),
 		.target(
 			name: "ReplaceWithSymlinksCore",
 			dependencies: [
